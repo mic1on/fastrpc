@@ -28,9 +28,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 @app.get("/do/{action}")
 async def do(action):
+    if not manager.clients:
+        return ErrorResponse("No clients connected")
     client_ids = choices(list(manager.clients.keys()))  # random client
     if not client_ids:
-        return ErrorResponse("no online client")
+        return ErrorResponse("No clients connected")
     client_id = client_ids[0]
     response = await manager.send_one(client_id, {
         "action": action

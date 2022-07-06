@@ -13,6 +13,17 @@
 
 ### 使用
 
+- 方式1：docker
+> docker run --name rpc -p 8000:8000 -d miclon/fastapi_rpc
+
+```text
+支持环境变量：
+WORKERS_PER_CORE: 每个CPU核工作线程数量，默认为1
+MAX_WORKERS：工作进程，默认是按CPU核心数量*WORKERS_PER_CORE
+```
+
+- 方式2：clone本地运行
+
 1. 首先你需要确保成功运行python主程序`main.py`
 2. 将提供给你的`client.js`注入到浏览器中。注入方式作者用的是油猴。
 3. 将浏览器打开任意网站，比如百度。（这时候油猴脚本是将client.js注入到页面里的）
