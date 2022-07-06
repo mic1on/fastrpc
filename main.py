@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import json
-from random import sample
+from random import choices
 
 from fastapi import FastAPI
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -28,7 +28,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 
 @app.get("/do/{action}")
 async def do(action):
-    client_ids = sample(manager.clients.keys(), 1)  # random client
+    client_ids = choices(list(manager.clients.keys()))  # random client
     if not client_ids:
         return ErrorResponse("no online client")
     client_id = client_ids[0]
