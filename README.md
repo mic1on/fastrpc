@@ -14,7 +14,7 @@
 ### 使用
 
 - 方式1：docker
-> docker run --name rpc -p 8000:8000 -d miclon/fastapi_rpc
+> docker run --name rpc -p 8000:8000 -d miclon/fastrpc
 
 ```text
 支持环境变量：
