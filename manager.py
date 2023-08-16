@@ -1,43 +1,43 @@
-# -*- coding: utf-8 -*-
+import asyncio
 from typing import Dict
-from fastapi import WebSocket
+from fastapi.websockets import WebSocket
 
 
-class WSManager:
+class WebSocketManager:
     def __init__(self):
         self.clients: Dict[str, WebSocket] = {}
+        self.message_queues: Dict[str, asyncio.Queue] = {}
+        self.response_events: Dict[str, asyncio.Event] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str):
         await websocket.accept()
         self.clients[client_id] = websocket
+        self.message_queues[client_id] = asyncio.Queue()
+        self.response_events[client_id] = asyncio.Event()
 
     def disconnect(self, client_id: str):
-        self.clients.pop(client_id)
+        if client_id in self.clients:
+            del self.clients[client_id]
+            del self.message_queues[client_id]
+            del self.response_events[client_id]
 
-    @staticmethod
-    async def _send(connection, message: str, mode: str = "json"):
-        if mode == "json":
-            await connection.send_json(message)
-        elif mode == "text":
-            await connection.send_text(message)
-        else:
-            await connection.send(message)
+    async def handle_message(self, client_id: str, message: str):
+        await self.message_queues[client_id].put(message)
 
-    async def send_all(self, message: str, mode: str = "json"):
-        if not self.clients:
+    async def send_one(self, client_id: str, message: dict):
+        websocket = self.clients.get(client_id)
+        if not websocket:
             return False
-        for client_id, connection in self.clients.items():
-            await self._send(connection, message, mode)
+
+        await websocket.send_json(message)
         return True
 
-    async def send_one(self, client_id, message, mode: str = "json"):
-        if client_id not in self.clients.keys():
-            return False
-        await self._send(self.clients[client_id], message, mode)
-        return True
+    async def get_response(self, client_id: str):
+        await self.response_events[client_id].wait()
+        self.response_events[client_id].clear()
+        return await self.message_queues[client_id].get()
 
-    sendAll = send_all
-    sendOne = send_one
-
-
-manager = WSManager()
+    async def send_response(self, client_id: str, response: str):
+        if client_id in self.response_events:
+            await self.message_queues[client_id].put(response)
+            self.response_events[client_id].set()

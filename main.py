@@ -1,16 +1,14 @@
-# -*- coding: utf-8 -*-
 import asyncio
-import json
 from random import choices
 
 from fastapi import FastAPI
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 
 from response import SuccessResponse, ErrorResponse
-from manager import manager
+from manager import WebSocketManager
 
 app = FastAPI()
-messages = {}
+manager = WebSocketManager()
 
 
 @app.websocket("/ws/{client_id}")
@@ -18,9 +16,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     await manager.connect(websocket, client_id)
     try:
         while True:
-            data = await websocket.receive_text()
-            messages[client_id] = data
-            # await manager.send_one(client_id, {'action': 'message', 'message': data})
+            data = await websocket.receive_json()
+            await manager.send_response(client_id, data)
     except WebSocketDisconnect:
         manager.disconnect(client_id)
         await manager.send_one(client_id, f"Client #{client_id} left the chat")
@@ -30,29 +27,29 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 async def do(action):
     if not manager.clients:
         return ErrorResponse("No clients connected")
-    client_ids = choices(list(manager.clients.keys()))  # random client
-    if not client_ids:
+
+    client_id = choices(list(manager.clients.keys()))[0]
+    if not client_id:
         return ErrorResponse("No clients connected")
-    client_id = client_ids[0]
-    response = await manager.send_one(client_id, {
-        "action": action
-    })
+    response = await manager.send_one(client_id, {"action": action})
     if not response:
         return ErrorResponse(f"{client_id} offline")
-    for _ in range(100):
-        await asyncio.sleep(0.1)
-        if res := messages.get(client_id):
-            messages[client_id] = None
-            return SuccessResponse(json.loads(res))
+
+    try:
+        result = await asyncio.wait_for(manager.get_response(client_id), timeout=10)  # Set timeout
+    except asyncio.TimeoutError:
+        return ErrorResponse("Timeout waiting for client response")
+
+    return SuccessResponse(result)
 
 
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        app='main:app',
-        log_level="debug",
+        app="main:app",
+        log_level="info",
         port=8000,
         # loop="asyncio",
-        # workers=4,
+        workers=1,
     )

@@ -6,17 +6,17 @@ from fastapi.responses import JSONResponse
 
 class BaseJSONResponse(JSONResponse):
     message = ""
+    status_code = 200
 
-    def __init__(self, data: Union[str, dict], status_code: int = 200) -> None:
+    def __init__(self, data: Union[str, dict]) -> None:
         content = {
-            "code": status_code,
             "message": self.message
         }
         if isinstance(data, str):
             content["data"] = data
         elif isinstance(data, dict):
             content = {**content, **data}
-        super().__init__(content, status_code, None, None, None)
+        super().__init__(content, self.status_code, None, None, None)
 
 
 class SuccessResponse(BaseJSONResponse):
@@ -25,3 +25,4 @@ class SuccessResponse(BaseJSONResponse):
 
 class ErrorResponse(BaseJSONResponse):
     message = "error"
+    status_code = 400
