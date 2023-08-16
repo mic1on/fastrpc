@@ -1,4 +1,4 @@
-# FastAPI RPC
+# Fast RPC
 
 这是一个基于 FastAPI 的 浏览器 RPC 服务端。
 > 此浏览器可以是任何端(pc/手机/平板)的任意浏览器
