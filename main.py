@@ -1,10 +1,11 @@
 import asyncio
 from random import choices
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 
-from response import SuccessResponse, ErrorResponse
 from manager import WebSocketManager
 
 app = FastAPI()
@@ -23,24 +24,49 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
         await manager.send_one(client_id, f"Client #{client_id} left the chat")
 
 
-@app.get("/do/{action}")
-async def do(action):
+async def client():
     if not manager.clients:
-        return ErrorResponse("No clients connected")
+        raise HTTPException(status_code=400, detail="No clients connected")
 
     client_id = choices(list(manager.clients.keys()))[0]
     if not client_id:
-        return ErrorResponse("No clients connected")
-    response = await manager.send_one(client_id, {"action": action})
+        raise HTTPException(status_code=400, detail="No clients connected")
+    return client_id
+
+
+class InvokeParams(BaseModel):
+    action: str
+    param: Any = None
+
+
+async def send_request(client_id: str, params: dict):
+    response = await manager.send_one(client_id, params)
     if not response:
-        return ErrorResponse(f"{client_id} offline")
+        raise HTTPException(status_code=400, detail=f"{client_id} offline")
 
     try:
         result = await asyncio.wait_for(manager.get_response(client_id), timeout=10)  # Set timeout
     except asyncio.TimeoutError:
-        return ErrorResponse("Timeout waiting for client response")
+        raise HTTPException(status_code=400, detail="Timeout waiting for client response")
 
-    return SuccessResponse(result)
+    return result
+
+
+@app.post("/invoke")
+async def handle_invoke(
+        params: InvokeParams,
+        client_id: str = Depends(client)
+):
+    return await send_request(client_id, {"action": params.action, "param": params.param})
+
+
+@app.get("/invoke")
+async def handle_invoke_get(
+        action: str,
+        param: Any = None,
+        client_id: str = Depends(client)
+):
+    return await send_request(client_id, {"action": action, "param": param})
 
 
 if __name__ == "__main__":

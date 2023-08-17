@@ -28,7 +28,11 @@ MAX_WORKERS：工作进程，默认是按CPU核心数量*WORKERS_PER_CORE
 2. 将提供给你的`client.js`注入到浏览器中。注入方式作者用的是油猴。
 3. 将浏览器打开任意网站，比如百度。（这时候油猴脚本是将client.js注入到页面里的）
 4. 此时，你可以在电脑终端中执行：
-> curl http://localhost:8000/do/cookies
+> curl http://localhost:8000/invoke?action=cookies
+
+当然你也可以POST
+
+> curl -H "Content-Type: application/json" -X POST -d '{"action": "cookies" }' "http://localhost:8000/invoke"
 
 你将在终端看到你访问百度留下的cookies
 
@@ -51,7 +55,7 @@ client.registerAction("html",function(request, resolve,reject ){
 })
 ```
 随后，我们调用：
-> curl http://localhost:8000/do/html -o baidu.txt
+> curl http://localhost:8000/invoke?action=html -o baidu.txt
 
 ps: -o 输出到文件baidu.txt
 ![](https://miclon-job.oss-cn-hangzhou.aliyuncs.com/img/20220705234115.png)
@@ -82,7 +86,7 @@ client.registerAction("mm",function(request, resolve,reject ){
 ```
 调用：
 
-> curl http://localhost:8000/do/mm
+> curl http://localhost:8000/invoke?action=mm
 
 得到加密结果：
 ![](https://miclon-job.oss-cn-hangzhou.aliyuncs.com/img/20220705235309.png)

@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "fastrpc"
+version = "0.1.0"
+description = ""
+authors = ["miclon <jcnd@163.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+gunicorn = "20.1.0"
+fastapi = "0.78.0"
+uvicorn = "0.18.2"
+websockets = "10.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
